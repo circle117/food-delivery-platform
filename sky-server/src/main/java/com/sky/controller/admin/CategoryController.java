@@ -1,7 +1,9 @@
-package com.sky.controller.category;
+package com.sky.controller.admin;
 
 import com.sky.dto.CategoryDTO;
 import com.sky.dto.CategoryPageQueryDTO;
+import com.sky.entity.Category;
+import com.sky.entity.Employee;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.CategoryService;
@@ -70,4 +72,10 @@ public class CategoryController {
         return Result.success();
     }
 
+    @GetMapping("/list")
+    @ApiOperation(value = "get the category list")
+    public Result<Category[]> getList(int type) {
+        Category[] categories = categoryService.getList(type);
+        return Result.success(categories);
+    }
 }

@@ -70,10 +70,6 @@ public class CategoryServiceImpl implements CategoryService {
         BeanUtils.copyProperties(categoryDTO, category);
 
         category.setStatus(StatusConstant.DISABLE);
-        category.setCreateTime(LocalDateTime.now());
-        category.setUpdateTime(LocalDateTime.now());
-        category.setCreateUser(BaseContext.getCurrentId());
-        category.setUpdateUser(BaseContext.getCurrentId());
 
         categoryMapper.insert(category);
     }
@@ -87,5 +83,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (count > 0)
             throw new DeletionNotAllowedException(MessageConstant.CATEGORY_BE_RELATED_BY_SETMEAL);
         categoryMapper.deleteById(id);
+    }
+
+    public Category[] getList(int type) {
+        return categoryMapper.getAll(type);
     }
 }

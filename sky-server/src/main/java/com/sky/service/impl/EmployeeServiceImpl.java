@@ -79,11 +79,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
 
-        // use ThreadLocal to get the current employee id
-        employee.setCreateUser(BaseContext.getCurrentId());
-        employee.setUpdateUser(BaseContext.getCurrentId());
-
-
         employeeMapper.insert(employee);
     }
 
@@ -105,7 +100,6 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param id
      */
     public void enableOrDisable(int status, long id) {
-
         Employee employee = Employee.builder()
                         .status(status)
                         .id(id)
@@ -131,9 +125,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void update(EmployeeDTO employeeDTO) {
         Employee employee = new Employee();
         BeanUtils.copyProperties(employeeDTO, employee);
-
-        employee.setUpdateTime(LocalDateTime.now());
-        employee.setUpdateUser(BaseContext.getCurrentId());
 
         employeeMapper.update(employee);
     }
