@@ -144,7 +144,11 @@ public class DishServiceImpl implements DishService {
     public List<Dish> getListByCategoryId(long categoryId) {
         Dish dish = new Dish();
         dish.setCategoryId(categoryId);
-        return dishMapper.getList(dish);
 
+        return dishMapper.getList(dish);
+    }
+
+    public Dish getById(long id) {
+        return dishMapper.getById(id);
     }
 }

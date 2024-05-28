@@ -120,4 +120,8 @@ public class SetmealServiceImpl implements SetmealService {
         List<DishItemVO> list = setmealMapper.getDishItemBySetmealId(setmealId);
         return list;
     }
+
+    public Setmeal getById(long id) {
+        return setmealMapper.getById(id);
+    }
 }
