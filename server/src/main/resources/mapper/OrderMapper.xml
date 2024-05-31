@@ -25,6 +25,34 @@
             <if test="deliveryStatus != null">delivery_status = #{deliveryStatus},</if>
             <if test="deliveryTime != null">delivery_time = #{deliveryTime},</if>
         </set>
-        where number = #{number}
+        <where>
+            <if test="number != null">and number = #{number}</if>
+            <if test="id != null">and id = #{id}</if>
+        </where>
     </update>
+
+    <select id="pageQuery" resultType="com.joy.vo.OrderVO">
+        select * from orders
+        <where>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="status != null">
+                 and status = #{status}
+            </if>
+            <if test="beginTime != null">
+                and order_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null">
+                and order_time &lt;= #{endTime}
+            </if>
+            <if test="number != null">
+                and number like concat(#{number}, '%')
+            </if>
+            <if test="phone != null">
+                and phone like concat(#{phone}, '%')
+            </if>
+        </where>
+        order by order_time desc
+    </select>
 </mapper>
