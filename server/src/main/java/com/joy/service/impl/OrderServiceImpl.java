@@ -1,5 +1,6 @@
 package com.joy.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -20,6 +21,7 @@ import com.joy.vo.OrderPaymentVO;
 import com.joy.vo.OrderStatisticsVO;
 import com.joy.vo.OrderSubmitVO;
 import com.joy.vo.OrderVO;
+import com.joy.websocket.WebSocketServer;
 import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +45,7 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private AddressBookMapper addressBookMapper;
     @Autowired
-    private UserMapper userMapper;
+    private WebSocketServer webSocketServer;
     @Autowired
     private RedisTemplate redisTemplate;
 
@@ -97,9 +100,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
-        // 当前登录用户id
-        Long userId = BaseContext.getCurrentId();
-        User user = userMapper.getById(userId);
 
         // //调用微信支付接口，生成预支付交易单
         // JSONObject jsonObject = weChatPayUtil.pay(
@@ -124,6 +124,17 @@ public class OrderServiceImpl implements OrderService {
                                 .status(Orders.TO_BE_CONFIRMED)
                                 .payStatus(Orders.PAID).build();
         orderMapper.update(orders);
+
+        Orders ordersDB = orderMapper.getByNumberAndUserId(ordersPaymentDTO.getOrderNumber(), BaseContext.getCurrentId());
+
+        // send message to the admin client
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 1);
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号: " + ordersPaymentDTO.getOrderNumber());
+
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
 
         return vo;
     }
@@ -258,5 +269,19 @@ public class OrderServiceImpl implements OrderService {
 
         orderMapper.update(orders);
 
+    }
+
+    public void reminder(long id) {
+        Orders ordersDB = orderMapper.getById(id);
+
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 2);
+        map.put("orderId", id);
+        map.put("content", "订单号: " + ordersDB.getNumber());
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 }
