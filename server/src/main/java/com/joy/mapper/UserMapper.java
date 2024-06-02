@@ -4,6 +4,8 @@ import com.joy.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Map;
+
 @Mapper
 public interface UserMapper {
 
@@ -14,4 +16,6 @@ public interface UserMapper {
 
     @Select("select * from user where id=#{id}")
     User getById(long id);
+
+    Integer countByMap(Map<String, Object> map);
 }
