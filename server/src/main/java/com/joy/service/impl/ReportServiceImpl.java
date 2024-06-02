@@ -5,15 +5,20 @@ import com.joy.entity.Orders;
 import com.joy.mapper.OrderMapper;
 import com.joy.mapper.UserMapper;
 import com.joy.service.ReportService;
-import com.joy.vo.OrderReportVO;
-import com.joy.vo.SalesTop10ReportVO;
-import com.joy.vo.TurnoverReportVO;
-import com.joy.vo.UserReportVO;
+import com.joy.service.WorkspaceService;
+import com.joy.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -31,6 +36,8 @@ public class ReportServiceImpl implements ReportService {
     private OrderMapper orderMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private WorkspaceService workspaceService;
 
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
         // date string
@@ -139,6 +146,53 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(StringUtils.join(names, ","))
                 .numberList(StringUtils.join(numbers, ","))
                 .build();
+    }
+
+    public void exportBusinessData(HttpServletResponse response) throws IOException {
+        // get the business data from the database (30 days)
+        LocalDate begin = LocalDate.now().minusDays(30);
+        LocalDate end = LocalDate.now().minusDays(1);
+        BusinessDataVO businessDataVO = workspaceService.getBusinessData(
+                LocalDateTime.of(begin, LocalTime.MIN),
+                LocalDateTime.of(end, LocalTime.MAX));
+
+        // write into the excel file
+        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/reportTemplate.xlsx");
+        XSSFWorkbook excel = new XSSFWorkbook(in);
+        XSSFSheet sheet = excel.getSheet("Sheet1");
+        // time
+        sheet.getRow(1).getCell(1).setCellValue("时间：" + begin + "至" + end);
+
+        // overview
+        XSSFRow row = sheet.getRow(3);
+        row.getCell(2).setCellValue(businessDataVO.getTurnover());
+        row.getCell(4).setCellValue(businessDataVO.getOrderCompletionRate());
+        row.getCell(6).setCellValue(businessDataVO.getNewUsers());
+
+        row = sheet.getRow(4);
+        row.getCell(2).setCellValue(businessDataVO.getValidOrderCount());
+        row.getCell(4).setCellValue(businessDataVO.getUnitPrice());
+
+        // details
+        for (int i=0; i<30; i++) {
+            LocalDate date = begin.plusDays(i);
+            BusinessDataVO businessData = workspaceService.getBusinessData(
+                    LocalDateTime.of(date, LocalTime.MIN),
+                    LocalDateTime.of(date, LocalTime.MAX));
+            row = sheet.getRow(7+i);
+            row.getCell(1).setCellValue(date.toString());
+            row.getCell(2).setCellValue(businessData.getTurnover());
+            row.getCell(3).setCellValue(businessData.getValidOrderCount());
+            row.getCell(4).setCellValue(businessData.getOrderCompletionRate());
+            row.getCell(5).setCellValue(businessData.getUnitPrice());
+            row.getCell(6).setCellValue(businessData.getNewUsers());
+        }
+
+        // download the file through output stream
+        ServletOutputStream out = response.getOutputStream();
+        excel.write(out);
+        out.close();
+        excel.close();
     }
 
     private List<LocalDate> getDateList(LocalDate begin, LocalDate end) {
